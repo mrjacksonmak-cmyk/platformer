@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Fireball Dash - Gemini Edition</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #222;
+            overflow: hidden;
+            font-family: 'Press Start 2P', cursive;
+            touch-action: none;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(to bottom, #87CEEB, #E0F6FF);
+        }
+
+        canvas {
+            display: block;
+        }
+
+        /* HUD Styling */
+        #hud {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            gap: 20px;
+            font-size: 16px;
+            color: #333;
+            text-shadow: 2px 2px 0px #fff;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .hud-item {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 2px solid #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            pointer-events: auto;
+        }
+
+        /* Magic Button */
+        #btn-magic {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: 2px solid #fff;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            transition: transform 0.1s;
+        }
+        
+        #btn-magic:active {
+            transform: scale(0.95);
+        }
+
+        /* Spell Input Modal */
+        #spell-modal {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            border: 4px solid #764ba2;
+            display: none;
+            flex-direction: column;
+            gap: 15px;
+            z-index: 50;
+            width: 80%;
+            max-width: 400px;
+            text-align: center;
+            color: white;
+        }
+
+        #spell-input {
+            padding: 10px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 14px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        #spell-submit {
+            padding: 10px;
+            background: #764ba2;
+            color: white;
+            border: none;
+            font-family: 'Press Start 2P', cursive;
+            cursor: pointer;
+        }
+
+        #loading-spinner {
+            display: none;
+            color: #FFD700;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+
+        /* Active Spell Toast */
+        #spell-toast {
+            position: absolute;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(118, 75, 162, 0.9);
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 12px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.5s;
+            text-shadow: 1px 1px 0 #000;
+            z-index: 15;
+            border: 2px solid white;
+        }
+
+        /* Mobile Controls */
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            width: 100%;
+            display: none;
+            justify-content: space-between;
+            padding: 0 20px;
+            box-sizing: border-box;
+            pointer-events: none;
+        }
+
+        .control-btn {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.5);
+            border: 2px solid #333;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            pointer-events: auto;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .control-btn:active {
+            background: rgba(255, 255, 255, 0.8);
+            transform: scale(0.95);
+        }
+
+        #d-pad {
+            display: flex;
+            gap: 15px;
+        }
+
+        /* Overlay */
+        #overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            z-index: 20;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        #overlay h1 {
+            font-size: 32px;
+            margin-bottom: 20px;
+            color: #FFD700;
+            text-shadow: 4px 4px 0px #000;
+        }
+
+        #overlay-msg {
+            margin-bottom: 20px;
+            line-height: 1.5;
+            font-size: 14px;
+            max-width: 600px;
+        }
+        
+        #ai-commentary {
+            color: #AAA;
+            font-style: italic;
+            font-size: 12px;
+            margin-bottom: 30px;
+            min-height: 40px;
+            max-width: 500px;
+            padding: 10px;
+            border-top: 1px solid #444;
+            border-bottom: 1px solid #444;
+        }
+
+        #overlay button {
+            padding: 15px 30px;
+            font-size: 18px;
+            font-family: 'Press Start 2P', cursive;
+            background: #4CAF50;
+            color: white;
+            border: 4px solid #2E7D32;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+
+        #overlay button:hover {
+            background: #66BB6A;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="hud">
+        <div class="hud-item">
+            <span>🪙</span> <span id="coin-count">0</span>
+        </div>
+        <div class="hud-item">
+            <span>⏱️</span> <span id="timer">00:00</span>
+        </div>
+        <button id="btn-magic" class="hud-item" onclick="toggleSpellModal()">
+            <span>✨ Cast Spell</span>
+        </button>
+    </div>
+    
+    <div id="spell-toast">Activated: Normal Physics</div>
+
+    <div id="spell-modal">
+        <h3>✨ Gemini Grimoire</h3>
+        <p style="font-size: 10px; color: #ccc;">"Moon gravity", "Giant mode", "Speedy"...</p>
+        <input type="text" id="spell-input" placeholder="Enter your wish..." autocomplete="off">
+        <button id="spell-submit" onclick="castSpell()">CAST SPELL</button>
+        <div id="loading-spinner">Consulting the oracles...</div>
+        <button onclick="toggleSpellModal()" style="margin-top: 10px; background: transparent; border: 1px solid #555; font-size: 10px; color: #aaa; cursor: pointer;">Cancel</button>
+    </div>
+
+    <div id="overlay">
+        <h1 id="overlay-title">LEVEL COMPLETE!</h1>
+        <p id="overlay-msg">Time: 00:00<br>Coins: 5/10</p>
+        <div id="ai-commentary">Generating commentary...</div>
+        <button onclick="resetGame()">Play Again</button>
+    </div>
+
+    <!-- Mobile Controls -->
+    <div id="controls">
+        <div id="d-pad">
+            <div class="control-btn" id="btn-left">⬅️</div>
+            <div class="control-btn" id="btn-right">➡️</div>
+        </div>
+        <div class="control-btn" id="btn-jump">⬆️</div>
+    </div>
+</div>
+
+<script>
+    // --- Gemini API Setup ---
+    const apiKey = ""; // System provided
+
+    async function callGemini(prompt, isJson = false) {
+        if (!apiKey) {
+            console.error("API Key missing");
+            return null;
+        }
+        
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+        
+        const payload = {
+            contents: [{ parts: [{ text: prompt }] }]
+        };
+
+        if (isJson) {
+            payload.generationConfig = {
+                responseMimeType: "application/json"
+            };
+        }
+
+        const delays = [1000, 2000, 4000];
+        for (let i = 0; i < delays.length + 1; i++) {
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (!response.ok) throw new Error(response.statusText);
+                
+                const data = await response.json();
+                return data.candidates[0].content.parts[0].text;
+            } catch (e) {
+                if (i === delays.length) {
+                    console.error("Gemini API Failed:", e);
+                    return null;
+                }
+                await new Promise(r => setTimeout(r, delays[i]));
+            }
+        }
+    }
+
+    // --- Configuration ---
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const hudCoins = document.getElementById('coin-count');
+    const hudTimer = document.getElementById('timer');
+    const overlay = document.getElementById('overlay');
+    const overlayTitle = document.getElementById('overlay-title');
+    const overlayMsg = document.getElementById('overlay-msg');
+    const aiCommentary = document.getElementById('ai-commentary');
+    const spellModal = document.getElementById('spell-modal');
+    const spellInput = document.getElementById('spell-input');
+    const spellToast = document.getElementById('spell-toast');
+    const spinner = document.getElementById('loading-spinner');
+    
+    // Default Physics
+    const DEFAULTS = {
+        gravity: 0.6,
+        jump: -14,
+        speed: 5,
+        scale: 1
+    };
+
+    // Mutable Game Variables (Controlled by Spellbook)
+    let currentGravity = DEFAULTS.gravity;
+    let currentJumpForce = DEFAULTS.jump;
+    let currentSpeed = DEFAULTS.speed;
+    let currentScale = DEFAULTS.scale;
+    let currentSpellName = "Normal Physics";
+
+    const FRICTION = 0.8;
+    const FIREBALL_SPEED = 6;
+    const FIREBALL_FREQUENCY = 120; 
+
+    // Game State
+    let gameRunning = true;
+    let frames = 0;
+    let startTime = Date.now();
+    let coinsCollected = 0;
+    
+    // Camera
+    let cameraX = 0;
+
+    // Entities
+    let player = {
+        x: 100,
+        y: 300,
+        width: 40,
+        height: 40,
+        vx: 0,
+        vy: 0,
+        grounded: false,
+        facingRight: true,
+        color: '#333'
+    };
+
+    let platforms = [];
+    let coins = [];
+    let fireballs = [];
+    let clouds = [];
+    let cannons = []; 
+    let goal = { x: 0, y: 0, width: 60, height: 100 };
+
+    const keys = { right: false, left: false, up: false };
+
+    // --- Initialization ---
+
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (isMobile) {
+        document.getElementById('controls').style.display = 'flex';
+    }
+
+    function initLevel() {
+        // Reset Physics
+        currentGravity = DEFAULTS.gravity;
+        currentJumpForce = DEFAULTS.jump;
+        currentSpeed = DEFAULTS.speed;
+        currentScale = DEFAULTS.scale;
+        currentSpellName = "Normal Physics";
+        showToast("Physics Reset");
+
+        player.x = 100;
+        player.y = canvas.height - 200;
+        player.vx = 0;
+        player.vy = 0;
+        coinsCollected = 0;
+        cameraX = 0;
+        frames = 0;
+        startTime = Date.now();
+        gameRunning = true;
+        fireballs = [];
+        cannons = [];
+        overlay.style.display = 'none';
+
+        platforms = [];
+        coins = [];
+        clouds = [];
+
+        const groundY = canvas.height - 100;
+        
+        platforms.push({ x: 0, y: groundY, w: 400, h: 100 });
+
+        let currentX = 500;
+        const gapMin = 100;
+        const gapMax = 180;
+        const platWidthMin = 150;
+        const platWidthMax = 300;
+        const levelLength = 3000; 
+
+        while (currentX < levelLength) {
+            let w = Math.random() * (platWidthMax - platWidthMin) + platWidthMin;
+            let h = 100;
+            let yOffset = (Math.random() - 0.5) * 150;
+            let y = groundY + yOffset;
+            
+            if (y > canvas.height - 50) y = canvas.height - 50;
+            if (y < canvas.height - 300) y = canvas.height - 300;
+
+            platforms.push({ x: currentX, y: y, w: w, h: h });
+
+            if (Math.random() > 0.3) {
+                let coinCount = Math.floor(Math.random() * 3) + 1;
+                for(let i=0; i<coinCount; i++) {
+                    coins.push({
+                        x: currentX + 40 + (i * 40),
+                        y: y - 50 - (Math.sin(i)*20),
+                        collected: false,
+                        w: 25,
+                        h: 25
+                    });
+                }
+            }
+
+            if (w > 200 && Math.random() > 0.7) {
+                cannons.push({
+                    x: currentX + w - 60,
+                    y: y - 40,
+                    width: 50,
+                    height: 50,
+                    phase: Math.floor(Math.random() * 60)
+                });
+            }
+
+            currentX += w + (Math.random() * (gapMax - gapMin) + gapMin);
+        }
+
+        const finalX = currentX + 100;
+        platforms.push({ x: finalX, y: groundY - 100, w: 600, h: 200 }); 
+        
+        cannons.push({
+            x: finalX + 450,
+            y: groundY - 220,
+            width: 50,
+            height: 50,
+            phase: 0
+        });
+
+        goal.x = finalX + 500;
+        goal.y = groundY - 200;
+
+        for(let i=0; i<20; i++) {
+            clouds.push({
+                x: Math.random() * (levelLength + 1000),
+                y: Math.random() * (canvas.height / 2),
+                size: Math.random() * 0.5 + 0.5,
+                speed: Math.random() * 0.2 + 0.1
+            });
+        }
+    }
+
+    // --- Input Handling ---
+
+    window.addEventListener('keydown', (e) => {
+        if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = true;
+        if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = true;
+        if (e.code === 'ArrowUp' || e.code === 'Space' || e.code === 'KeyW') {
+            if (player.grounded) {
+                player.vy = currentJumpForce; // Use dynamic jump
+                player.grounded = false;
+            }
+            keys.up = true;
+        }
+        if (e.code === 'Enter' && gameRunning) {
+            toggleSpellModal();
+        }
+    });
+
+    window.addEventListener('keyup', (e) => {
+        if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = false;
+        if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = false;
+        if (e.code === 'ArrowUp' || e.code === 'Space' || e.code === 'KeyW') keys.up = false;
+    });
+
+    const btnLeft = document.getElementById('btn-left');
+    const btnRight = document.getElementById('btn-right');
+    const btnJump = document.getElementById('btn-jump');
+
+    const addTouch = (elem, key) => {
+        elem.addEventListener('touchstart', (e) => { e.preventDefault(); keys[key] = true; });
+        elem.addEventListener('touchend', (e) => { e.preventDefault(); keys[key] = false; });
+        elem.addEventListener('mousedown', (e) => { e.preventDefault(); keys[key] = true; });
+        elem.addEventListener('mouseup', (e) => { e.preventDefault(); keys[key] = false; });
+    };
+
+    addTouch(btnLeft, 'left');
+    addTouch(btnRight, 'right');
+    
+    const jumpStart = (e) => {
+        e.preventDefault();
+        if (player.grounded) {
+            player.vy = currentJumpForce;
+            player.grounded = false;
+        }
+        keys.up = true;
+    };
+    btnJump.addEventListener('touchstart', jumpStart);
+    btnJump.addEventListener('mousedown', jumpStart);
+    btnJump.addEventListener('touchend', (e) => { e.preventDefault(); keys.up = false; });
+    btnJump.addEventListener('mouseup', (e) => { e.preventDefault(); keys.up = false; });
+
+    // --- Spell Logic ---
+
+    function toggleSpellModal() {
+        if (spellModal.style.display === 'flex') {
+            spellModal.style.display = 'none';
+            gameRunning = true; // Resume
+        } else {
+            spellModal.style.display = 'flex';
+            gameRunning = false; // Pause
+            spellInput.focus();
+        }
+    }
+
+    async function castSpell() {
+        const text = spellInput.value.trim();
+        if (!text) return;
+
+        spinner.style.display = 'block';
+        
+        const prompt = `
+            You are a game engine. Transform this request into physics parameters: "${text}".
+            Defaults: gravity: 0.6, speed: 5, jump: -14, scale: 1.
+            Return JSON only: { 
+                "gravity": number (0.1 to 2.0), 
+                "speed": number (2 to 25), 
+                "jump": number (-5 to -25), 
+                "scale": number (0.5 to 3.0),
+                "spellName": "Short Cool Name"
+            }
+        `;
+
+        try {
+            const result = await callGemini(prompt, true);
+            if (result) {
+                const data = JSON.parse(result);
+                currentGravity = data.gravity || DEFAULTS.gravity;
+                currentSpeed = data.speed || DEFAULTS.speed;
+                currentJumpForce = data.jump || DEFAULTS.jump;
+                currentScale = data.scale || DEFAULTS.scale;
+                currentSpellName = data.spellName || "Wild Magic";
+                
+                showToast(`✨ Spell Cast: ${currentSpellName}`);
+            } else {
+                showToast("❌ Spell Fizzled (API Error)");
+            }
+        } catch (e) {
+            console.error(e);
+            showToast("❌ Spell Fizzled");
+        }
+        
+        spinner.style.display = 'none';
+        spellInput.value = '';
+        toggleSpellModal();
+    }
+
+    function showToast(text) {
+        spellToast.innerText = text;
+        spellToast.style.opacity = '1';
+        setTimeout(() => { spellToast.style.opacity = '0'; }, 3000);
+    }
+
+    // --- Game Logic ---
+
+    function update() {
+        if (!gameRunning) return;
+        frames++;
+
+        let elapsed = Math.floor((Date.now() - startTime) / 1000);
+        let minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
+        let seconds = (elapsed % 60).toString().padStart(2, '0');
+        hudTimer.innerText = `${minutes}:${seconds}`;
+
+        // Movement with Dynamic Speed
+        if (keys.right) {
+            player.vx += 1 * (currentSpeed / 5);
+            player.facingRight = true;
+        }
+        if (keys.left) {
+            player.vx -= 1 * (currentSpeed / 5);
+            player.facingRight = false;
+        }
+
+        // Speed Cap
+        if (player.vx > currentSpeed) player.vx = currentSpeed;
+        if (player.vx < -currentSpeed) player.vx = -currentSpeed;
+
+        // Friction
+        player.vx *= FRICTION;
+        player.x += player.vx;
+        
+        // Dynamic Gravity
+        player.vy += currentGravity;
+        player.y += player.vy;
+
+        // Dynamic Player Size
+        const pW = 40 * currentScale;
+        const pH = 40 * currentScale;
+        player.width = pW;
+        player.height = pH;
+
+        // Floor Collision
+        player.grounded = false;
+        for (let plat of platforms) {
+            if (
+                player.x < plat.x + plat.w &&
+                player.x + pW > plat.x &&
+                player.y + pH > plat.y &&
+                player.y + pH < plat.y + plat.h + 20 &&
+                player.vy >= 0
+            ) {
+                player.grounded = true;
+                player.vy = 0;
+                player.y = plat.y - pH;
+            }
+        }
+
+        if (player.y > canvas.height) {
+            gameOver("You Fell Into The Void!");
+        }
+
+        for (let coin of coins) {
+            if (!coin.collected) {
+                let dx = (player.x + pW/2) - coin.x;
+                let dy = (player.y + pH/2) - coin.y;
+                let dist = Math.sqrt(dx*dx + dy*dy);
+                
+                if (dist < 40 * currentScale) { 
+                    coin.collected = true;
+                    coinsCollected++;
+                    hudCoins.innerText = coinsCollected;
+                }
+            }
+        }
+
+        for (let cannon of cannons) {
+            let dist = cannon.x - player.x;
+            if (dist < canvas.width * 1.5 && dist > -200) {
+                if ((frames + cannon.phase) % FIREBALL_FREQUENCY === 0) {
+                    fireballs.push({
+                        x: cannon.x,
+                        y: cannon.y + 10,
+                        vx: -FIREBALL_SPEED,
+                        vy: 0,
+                        radius: 15
+                    });
+                }
+            }
+        }
+
+        for (let i = fireballs.length - 1; i >= 0; i--) {
+            let fb = fireballs[i];
+            fb.x += fb.vx;
+            
+            if (fb.x < cameraX - 200) {
+                fireballs.splice(i, 1);
+                continue;
+            }
+
+            let testX = fb.x;
+            let testY = fb.y;
+
+            if (fb.x < player.x) testX = player.x;
+            else if (fb.x > player.x + pW) testX = player.x + pW;
+            
+            if (fb.y < player.y) testY = player.y;
+            else if (fb.y > player.y + pH) testY = player.y + pH;
+
+            let distX = fb.x - testX;
+            let distY = fb.y - testY;
+            let distance = Math.sqrt(distX*distX + distY*distY);
+
+            if (distance <= fb.radius) {
+                gameOver("Burnt to a crisp!");
+            }
+        }
+
+        if (player.x > goal.x) {
+            gameWin();
+        }
+
+        let targetCamX = player.x - canvas.width / 3;
+        if (targetCamX < 0) targetCamX = 0;
+        cameraX += (targetCamX - cameraX) * 0.1;
+    }
+
+    // --- Rendering ---
+
+    function draw() {
+        ctx.fillStyle = '#87CEEB';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        let grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        grad.addColorStop(0, '#87CEEB');
+        grad.addColorStop(1, '#E0F6FF');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.save();
+        ctx.translate(-cameraX, 0);
+
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+        for (let c of clouds) {
+            let parallaxX = c.x - (cameraX * 0.5);
+            ctx.beginPath();
+            ctx.arc(parallaxX, c.y, 30 * c.size, 0, Math.PI * 2);
+            ctx.arc(parallaxX + 20*c.size, c.y - 10*c.size, 40 * c.size, 0, Math.PI * 2);
+            ctx.arc(parallaxX + 50*c.size, c.y, 30 * c.size, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        ctx.fillStyle = '#654321';
+        for (let plat of platforms) {
+            ctx.fillRect(plat.x, plat.y, plat.w, plat.h);
+            ctx.fillStyle = '#4CAF50';
+            ctx.fillRect(plat.x, plat.y, plat.w, 15);
+            ctx.fillStyle = '#654321';
+            ctx.fillStyle = 'rgba(0,0,0,0.1)';
+            ctx.fillRect(plat.x + 10, plat.y + 20, plat.w - 20, plat.h - 30);
+            ctx.fillStyle = '#654321'; 
+        }
+
+        ctx.fillStyle = '#FFD700';
+        ctx.fillRect(goal.x, goal.y, 10, 100);
+        ctx.fillStyle = 'red';
+        ctx.beginPath();
+        ctx.moveTo(goal.x + 10, goal.y);
+        ctx.lineTo(goal.x + 60, goal.y + 20);
+        ctx.lineTo(goal.x + 10, goal.y + 40);
+        ctx.fill();
+
+        for (let cannon of cannons) {
+            ctx.save();
+            ctx.translate(cannon.x, cannon.y);
+            ctx.fillStyle = '#333';
+            ctx.beginPath();
+            ctx.arc(0, 20, 20, 0, Math.PI, true);
+            ctx.fill();
+            ctx.translate(0, 10);
+            ctx.rotate(-0.2);
+            ctx.fillRect(-40, -15, 60, 30);
+            ctx.restore();
+        }
+
+        ctx.fillStyle = '#FFD700';
+        ctx.strokeStyle = '#DAA520';
+        ctx.lineWidth = 2;
+        for (let coin of coins) {
+            if (coin.collected) continue;
+            let spinWidth = Math.abs(Math.sin(frames * 0.1)) * coin.w;
+            ctx.beginPath();
+            ctx.ellipse(coin.x, coin.y, spinWidth/2, coin.h/2, 0, 0, Math.PI*2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.fillStyle = '#FFF'; 
+            ctx.font = '12px Arial';
+            if (spinWidth > 10) ctx.fillText('$', coin.x - 3, coin.y + 4);
+            ctx.fillStyle = '#FFD700';
+        }
+
+        for (let fb of fireballs) {
+            ctx.beginPath();
+            ctx.arc(fb.x, fb.y, fb.radius, 0, Math.PI*2);
+            let gradFb = ctx.createRadialGradient(fb.x, fb.y, 5, fb.x, fb.y, fb.radius);
+            gradFb.addColorStop(0, 'yellow');
+            gradFb.addColorStop(0.5, 'orange');
+            gradFb.addColorStop(1, 'red');
+            ctx.fillStyle = gradFb;
+            ctx.fill();
+            ctx.fillStyle = 'rgba(255, 100, 0, 0.5)';
+            ctx.fillRect(fb.x + 10, fb.y - 5, 30, 10);
+        }
+
+        // Draw Player (Scaled by magic)
+        ctx.strokeStyle = player.color;
+        ctx.lineWidth = 3 * currentScale;
+        ctx.fillStyle = player.color;
+        
+        const px = player.x + player.width/2;
+        const py = player.y + player.height/2;
+        const s = currentScale; // Scale multiplier
+
+        ctx.beginPath();
+        ctx.arc(px, py - 15*s, 8*s, 0, Math.PI*2);
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.moveTo(px, py - 7*s);
+        ctx.lineTo(px, py + 10*s);
+        ctx.stroke();
+
+        let armSwing = Math.sin(frames * 0.3) * (10*s);
+        if (!player.grounded) armSwing = -10*s;
+
+        ctx.beginPath();
+        ctx.moveTo(px, py - 5*s);
+        ctx.lineTo(px - (10*s) + (keys.right || keys.left ? armSwing : 0), py + 5*s);
+        ctx.moveTo(px, py - 5*s);
+        ctx.lineTo(px + (10*s) - (keys.right || keys.left ? armSwing : 0), py + 5*s);
+        ctx.stroke();
+
+        let legSwing = Math.sin(frames * 0.3) * (10*s);
+        if (!player.grounded) legSwing = 5*s;
+
+        ctx.beginPath();
+        ctx.moveTo(px, py + 10*s);
+        ctx.lineTo(px - (5*s) - (keys.right || keys.left ? legSwing : 0), py + (20*s));
+        ctx.moveTo(px, py + 10*s);
+        ctx.lineTo(px + (5*s) + (keys.right || keys.left ? legSwing : 0), py + (20*s));
+        ctx.stroke();
+
+        ctx.restore();
+
+        requestAnimationFrame(gameLoop);
+    }
+
+    function gameLoop() {
+        update();
+        draw();
+    }
+
+    async function gameOver(msg) {
+        if (!gameRunning) return;
+        gameRunning = false;
+        overlayTitle.innerText = "GAME OVER";
+        overlayTitle.style.color = "#FF4444";
+        overlayMsg.innerHTML = `${msg}<br>Time: ${hudTimer.innerText}`;
+        overlay.style.display = 'flex';
+        
+        aiCommentary.innerText = "The narrator is thinking...";
+        const prompt = `
+            You are a snarky game narrator. 
+            Player died by: "${msg}". 
+            Time survived: ${hudTimer.innerText}. 
+            Coins: ${coinsCollected}.
+            Write a 1 sentence roasting comment.
+        `;
+        const comment = await callGemini(prompt);
+        if (comment) aiCommentary.innerText = `"${comment}"`;
+    }
+
+    async function gameWin() {
+        if (!gameRunning) return;
+        gameRunning = false;
+        overlayTitle.innerText = "YOU WON!";
+        overlayTitle.style.color = "#FFD700";
+        overlayMsg.innerHTML = `You reached the other side!<br>Time: ${hudTimer.innerText}<br>Coins: ${coinsCollected}/${coins.length}`;
+        overlay.style.display = 'flex';
+
+        aiCommentary.innerText = "The narrator is thinking...";
+        const prompt = `
+            You are an excited game announcer. 
+            Player WON! 
+            Time: ${hudTimer.innerText}. 
+            Coins: ${coinsCollected}.
+            Write a 1 sentence epic congratulation.
+        `;
+        const comment = await callGemini(prompt);
+        if (comment) aiCommentary.innerText = `"${comment}"`;
+    }
+
+    function resetGame() {
+        initLevel();
+        gameLoop();
+    }
+
+    initLevel();
+    gameLoop();
+
+</script>
+</body>
+</html>
