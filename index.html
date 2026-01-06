@@ -356,6 +356,7 @@
     let frames = 0;
     let startTime = Date.now();
     let coinsCollected = 0;
+    let gameLoopId = null; // Track loop ID to prevent speed-up
     
     // Camera
     let cameraX = 0;
@@ -410,6 +411,7 @@
         player.vx = 0;
         player.vy = 0;
         coinsCollected = 0;
+        hudCoins.innerText = "0";
         cameraX = 0;
         frames = 0;
         startTime = Date.now();
@@ -501,7 +503,7 @@
         if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = true;
         if (e.code === 'ArrowUp' || e.code === 'Space' || e.code === 'KeyW') {
             if (player.grounded) {
-                player.vy = currentJumpForce; // Use dynamic jump
+                player.vy = currentJumpForce;
                 player.grounded = false;
             }
             keys.up = true;
@@ -549,10 +551,10 @@
     function toggleSpellModal() {
         if (spellModal.style.display === 'flex') {
             spellModal.style.display = 'none';
-            gameRunning = true; // Resume
+            gameRunning = true; 
         } else {
             spellModal.style.display = 'flex';
-            gameRunning = false; // Pause
+            gameRunning = false; 
             spellInput.focus();
         }
     }
@@ -616,7 +618,6 @@
         let seconds = (elapsed % 60).toString().padStart(2, '0');
         hudTimer.innerText = `${minutes}:${seconds}`;
 
-        // Movement with Dynamic Speed
         if (keys.right) {
             player.vx += 1 * (currentSpeed / 5);
             player.facingRight = true;
@@ -626,25 +627,20 @@
             player.facingRight = false;
         }
 
-        // Speed Cap
         if (player.vx > currentSpeed) player.vx = currentSpeed;
         if (player.vx < -currentSpeed) player.vx = -currentSpeed;
 
-        // Friction
         player.vx *= FRICTION;
         player.x += player.vx;
         
-        // Dynamic Gravity
         player.vy += currentGravity;
         player.y += player.vy;
 
-        // Dynamic Player Size
         const pW = 40 * currentScale;
         const pH = 40 * currentScale;
         player.width = pW;
         player.height = pH;
 
-        // Floor Collision
         player.grounded = false;
         for (let plat of platforms) {
             if (
@@ -816,14 +812,13 @@
             ctx.fillRect(fb.x + 10, fb.y - 5, 30, 10);
         }
 
-        // Draw Player (Scaled by magic)
         ctx.strokeStyle = player.color;
         ctx.lineWidth = 3 * currentScale;
         ctx.fillStyle = player.color;
         
         const px = player.x + player.width/2;
         const py = player.y + player.height/2;
-        const s = currentScale; // Scale multiplier
+        const s = currentScale;
 
         ctx.beginPath();
         ctx.arc(px, py - 15*s, 8*s, 0, Math.PI*2);
@@ -855,13 +850,12 @@
         ctx.stroke();
 
         ctx.restore();
-
-        requestAnimationFrame(gameLoop);
     }
 
     function gameLoop() {
         update();
         draw();
+        gameLoopId = requestAnimationFrame(gameLoop);
     }
 
     async function gameOver(msg) {
@@ -905,10 +899,13 @@
     }
 
     function resetGame() {
+        // Stop the current loop before starting a new one
+        if (gameLoopId) cancelAnimationFrame(gameLoopId);
         initLevel();
         gameLoop();
     }
 
+    // Start initial game
     initLevel();
     gameLoop();
 
